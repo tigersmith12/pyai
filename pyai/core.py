@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-import re
-
+from .intent import build_purpose_seed
 from .models import Action, Evaluation, PurposeSeed, Response
 from .policy import SafetyPolicy
 from .skills import SkillError, execute, infer_action
@@ -17,38 +16,7 @@ class Assistant:
 
     @staticmethod
     def _make_seed(request: str, context: str) -> PurposeSeed:
-        normalized = " ".join(request.lower().split())
-        if re.search(r"\b(convert|conversion)\b|\b\d+(?:\.\d+)?\s*[a-z]+\s+(?:to|in)\s+[a-z]+\b", normalized):
-            task_type, goal = "conversion", "convert the given quantity"
-        elif re.search(r"\b(plan|checklist|steps)\b", normalized):
-            task_type, goal = "planning", "create an ordered plan for the stated objective"
-        elif re.search(r"\d.*(?:[+*/%]|\-\s*\d|\b(?:plus|minus|times|divided by)\b)", normalized):
-            task_type, goal = "arithmetic", "evaluate the requested arithmetic"
-        else:
-            task_type, goal = "unsupported", "respond honestly within supported capabilities"
-
-        constraints: list[str] = []
-        combined = f"{request} {context}".lower()
-        if re.search(r"\b(brief|briefly|concise|short answer)\b", combined):
-            constraints.append("be concise")
-        if re.search(r"\b(step by step|show steps|explain the steps)\b", combined):
-            constraints.append("show a concise method")
-        if context.strip():
-            constraints.append("respect the supplied context")
-        delta = {
-            "arithmetic": "Resolve the expression to one checked numeric result.",
-            "conversion": "Return the equivalent quantity in the requested compatible unit.",
-            "planning": "Turn the stated goal into a short ordered checklist.",
-            "unsupported": "State capability limits without fabricating an answer.",
-        }[task_type]
-        return PurposeSeed(
-            request=request,
-            normalized_request=normalized,
-            goal=goal,
-            task_type=task_type,
-            constraints=tuple(constraints),
-            target_delta=delta,
-        )
+        return build_purpose_seed(request, context)
 
     def respond(self, request: str, context: str = "") -> Response:
         """Synthesize purpose, gate a simulated action, execute, then score the result."""

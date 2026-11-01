@@ -16,6 +16,11 @@ class PurposeSeed:
     task_type: str
     constraints: tuple[str, ...] = ()
     target_delta: str = "Produce a complete, relevant answer."
+    success_criteria: tuple[str, ...] = ()
+    non_goals: tuple[str, ...] = ()
+    exploration_guidance: str = (
+        "Explore a relevant alternative or useful question when it improves the answer; do not force tangents."
+    )
 
 
 @dataclass(frozen=True)
